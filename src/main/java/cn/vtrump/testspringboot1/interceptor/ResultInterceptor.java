@@ -1,6 +1,7 @@
 package cn.vtrump.testspringboot1.interceptor;
 
 import cn.vtrump.testspringboot1.annotation.EncryptDecryptClass;
+import cn.vtrump.testspringboot1.annotation.EncryptDecryptField;
 import cn.vtrump.testspringboot1.encryptdecrypt.EncryptDecrypt;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.resultset.ResultSetHandler;
@@ -37,10 +38,15 @@ public class ResultInterceptor implements Interceptor {
             if(!CollectionUtils.isEmpty(resultList) && needToDecrypt(resultList.get(0))){
                 for (Object o : resultList) {
                     Class<?> resultObjectClass = o.getClass();
-                    Field nameField = resultObjectClass.getDeclaredField("name");//TODO:反射检测带EncryptDecryptField字段
-                    nameField.setAccessible(true);
-                    //把解密后的值直接赋给result，反射特性？
-                    nameField.set(o, encryptDecrypt.decrypt((String) nameField.get(o)));
+                    Field[] resultFields = resultObjectClass.getDeclaredFields();
+                    for(Field f : resultFields){
+                        if(f.isAnnotationPresent(EncryptDecryptField.class)){
+                            f.setAccessible(true);
+                            //TODO:Decrypt and set
+                            f.set(o, encryptDecrypt.decrypt((String) f.get(o)));
+                            f.setAccessible(false);
+                        }
+                    }
                 }
             }
         }
@@ -48,9 +54,15 @@ public class ResultInterceptor implements Interceptor {
         else{
             if(needToDecrypt(result)){
                 Class<?> resultObjectClass = result.getClass();
-                Field nameField = resultObjectClass.getDeclaredField("name");//TODO:反射检测带EncryptDecryptField字段
-                nameField.setAccessible(true);
-                nameField.set(result, encryptDecrypt.decrypt((String) nameField.get(result)));
+                Field[] resultFields = resultObjectClass.getDeclaredFields();
+                for(Field f : resultFields){
+                    if(f.isAnnotationPresent(EncryptDecryptField.class)){
+                        f.setAccessible(true);
+                        //TODO:Decrypt and set
+                        f.set(result, encryptDecrypt.decrypt((String) f.get(result)));
+                        //f.setAccessible(false);
+                    }
+                }
             }
         }
         return result;

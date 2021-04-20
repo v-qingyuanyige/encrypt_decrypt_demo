@@ -1,6 +1,7 @@
 package cn.vtrump.testspringboot1.interceptor;
 
 import cn.vtrump.testspringboot1.annotation.EncryptDecryptClass;
+import cn.vtrump.testspringboot1.annotation.EncryptDecryptField;
 import cn.vtrump.testspringboot1.encryptdecrypt.EncryptDecrypt;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.plugin.*;
@@ -34,10 +35,15 @@ public class ParameterInterceptor implements Interceptor {
                 //检查parameterObject是否带有EncryptDecryptClass注解，没有会返回Null
                 EncryptDecryptClass encryptDecryptClass = AnnotationUtils.findAnnotation(parameterObjectClass, EncryptDecryptClass.class);
                 if(Objects.nonNull(encryptDecryptClass)){
-                    //若parameterObject带有注解，那就需要被加密，通过反射来修改字段值达到加密的功能
-                    Field nameField = parameterObjectClass.getDeclaredField("name");//TODO:反射检测带EncryptDecryptField字段
-                    nameField.setAccessible(true);
-                    nameField.set(parameterObject, encryptDecrypt.encrypt((String) nameField.get(parameterObject)));
+                    Field[] parameterObjectFields = parameterObjectClass.getDeclaredFields();
+                    for(Field f : parameterObjectFields){
+                        if(f.isAnnotationPresent(EncryptDecryptField.class)){
+                            f.setAccessible(true);
+                            //TODO:Encrypt and set
+                            f.set(parameterObject , encryptDecrypt.encrypt((String) f.get(parameterObject)));
+                            f.setAccessible(false);
+                        }
+                    }
                 }
             }
         }
